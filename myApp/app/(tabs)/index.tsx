@@ -1,32 +1,20 @@
 import { Image, StyleSheet, Platform, View, Text } from 'react-native';
-import React , { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Audio } from 'expo-av';
 import { Button } from 'react-native-paper';
 
 export default function HomeScreen() {
-const [seconds, setSeconds] = useState(25 * 60);
-const [isRunning, setIsRunning] = useState(false);
-const [isNotifying, setIsNotifying] = useState(true);
-
-  const handleButtonPress = (time: number) => {
-    setSeconds(time * 60);
-    setIsRunning(false);
-  }
-
-  const handleStartStop = (start: number) => {
-    if (start){
-      setIsRunning(true);
-    }
-    else {
-      setIsRunning(false);
-    }
-  }
+  const [seconds, setSeconds] = useState(25 * 60);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isNotifying, setIsNotifying] = useState(true);
+  const [pomodoroCount, setPomodoroCount] = useState(0);
+  const [mode, setMode] = useState<'pomodoro' | 'shortBreak' | 'longBreak'>('pomodoro');
 
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;return 
-  }
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
 
   const playSound = async () => {
     const { sound } = await Audio.Sound.createAsync(
@@ -35,65 +23,108 @@ const [isNotifying, setIsNotifying] = useState(true);
     await sound.playAsync();
   };
 
+  // Handle timer logic
   useEffect(() => {
-    let timer: string | number | NodeJS.Timeout | undefined;
-    if(isRunning &&  seconds > 0){
+    let timer: NodeJS.Timeout | undefined;
+
+    if (isRunning && seconds > 0) {
       timer = setInterval(() => {
         setSeconds((prev) => prev - 1);
       }, 1000);
     }
-    else {
-      clearInterval(timer);
-    }
-    return() => clearInterval(timer);
-  }, [isRunning, seconds]);
 
-  useEffect(() => {
-    if(isRunning && seconds <= 0 && isNotifying){
-      const notification = setInterval(() => {
+    if (isRunning && seconds === 0) {
+      // Play alarm
+      if (isNotifying) {
         playSound();
-      }, 5000);
+      }
 
-      return () => clearInterval(notification)
+      // Transition to next session
+      if (mode === 'pomodoro') {
+        const nextCount = pomodoroCount + 1;
+        setPomodoroCount(nextCount);
+
+        if (nextCount % 4 === 0) {
+          // Long break after 4 pomodoros
+          setMode('longBreak');
+          setSeconds(15 * 60);
+        } else {
+          // Short break
+          setMode('shortBreak');
+          setSeconds(5 * 60);
+        }
+      } else {
+        // After break, go back to pomodoro
+        setMode('pomodoro');
+        setSeconds(25 * 60);
+      }
     }
-  }, [seconds, isNotifying]);
+
+    return () => clearInterval(timer);
+  }, [isRunning, seconds, mode, pomodoroCount, isNotifying]);
+
+  const handleStartStop = (start: boolean) => {
+    setIsRunning(start);
+  };
+
+  const handleSetTime = (time: number) => {
+    setSeconds(time * 60);
+    setIsRunning(true);
+  };
+
+  const handleStopAlarm = () => {
+    setIsNotifying(false);
+  };
 
   return (
     <View style={styles.container}>
-    <Text style={styles.timerText}>{formatTime(seconds)}</Text>
-    <View style = {styles.buttonGroup}>
-      <Button onPress={() => handleButtonPress(25)}> 25 </Button>
-      <Button onPress={() => handleButtonPress(15)}> 15 </Button>
-      <Button onPress={() => handleButtonPress(5)}> 5 </Button>
-      <Button onPress={() => handleButtonPress(1)}> 1 </Button>
+      <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+      <Text style={styles.sessionLabel}>
+        {mode === 'pomodoro'
+          ? 'Work Session'
+          : mode === 'shortBreak'
+          ? 'Short Break'
+          : 'Long Break'}
+      </Text>
+
+      <View style={styles.buttonGroup}>
+        <Button onPress={() => handleSetTime(25)}>25 min</Button>
+        <Button onPress={() => handleSetTime(15)}>15 min</Button>
+        <Button onPress={() => handleSetTime(5)}>5 min</Button>
+        <Button onPress={() => handleSetTime(1)}>1 min</Button>
+      </View>
+
+      <View style={styles.buttonGroup}>
+        <Button onPress={() => handleStartStop(true)}>Start</Button>
+        <Button onPress={() => handleStartStop(false)}>Stop</Button>
+      </View>
+
+      {seconds === 0 && (
+        <Button onPress={handleStopAlarm}>Stop Alarm</Button>
+      )}
     </View>
-    <View style = {styles.buttonGroup}>
-      <Button onPress = {() => handleStartStop(1)}> Start </Button>
-      <Button onPress = {() => handleStartStop(0)}> Stop </Button>
-    </View>
-    {
-      !seconds && (
-        <Button onPress={() => setIsNotifying(false)}> Stop Alarm </Button>
-      )
-    }
- </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,                         // Take up full height of the screen
-    justifyContent: 'center',       // Center vertically
-    alignItems: 'center',           // Center horizontally
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonGroup: {
-    flexDirection: 'row',   // ⬅️ Make buttons horizontal
+    flexDirection: 'row',
     justifyContent: 'center',
-    gap: 10,                 // Optional: adds space between buttons
+    gap: 10,
+    marginVertical: 10,
   },
   timerText: {
     fontSize: 48,
     fontWeight: 'bold',
-    marginBottom: 30,
-  }
+    marginBottom: 10,
+  },
+  sessionLabel: {
+    fontSize: 20,
+    marginBottom: 20,
+  },
 });
