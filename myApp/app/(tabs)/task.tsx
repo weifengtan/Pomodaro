@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, View, Button, FlatList, Text } from 'react-native';
+import { StyleSheet, TextInput, View, FlatList, Text, TouchableOpacity } from 'react-native';
+import { Button } from 'react-native-paper';
+import styles from '../styles';
 
 export default function TabTwoScreen() {
   const [task, setTask] = useState('');
@@ -12,6 +14,10 @@ export default function TabTwoScreen() {
     }
   };
 
+  const removeTask = (index: number) => {
+    setTasks(tasks.filter((_, i) => i !== index));
+  };
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -20,33 +26,23 @@ export default function TabTwoScreen() {
         value={task}
         onChangeText={setTask}
       />
-      <Button title="Add Task" onPress={addTask} />
+      <View style={styles.buttonGroup}>
+        <Button mode="contained" onPress={addTask}>
+          Add Task
+        </Button>
+      </View>
       <FlatList
         data={tasks}
         keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => <Text style={styles.task}>{item}</Text>}
+        renderItem={({ item, index }) => (
+          <View style={styles.taskContainer}>
+            <Text style={styles.task}>{item}</Text>
+            <TouchableOpacity onPress={() => removeTask(index)} style={styles.checkButton}>
+              <Text style={styles.checkButtonText}>✔</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginBottom: 8,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-  },
-  task: {
-    padding: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-});

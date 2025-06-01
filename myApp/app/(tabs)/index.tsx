@@ -2,6 +2,7 @@ import { Image, StyleSheet, Platform, View, Text } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Audio } from 'expo-av';
 import { Button } from 'react-native-paper';
+import styles from '../styles';
 
 export default function HomeScreen() {
   const [seconds, setSeconds] = useState(25 * 60);
@@ -105,26 +106,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-    marginVertical: 10,
-  },
-  timerText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  sessionLabel: {
-    fontSize: 20,
-    marginBottom: 20,
-  },
-});
